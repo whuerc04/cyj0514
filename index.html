@@ -177,10 +177,11 @@ function logout(){try{sessionStorage.removeItem(AUTHK)}catch(e){}owner=false;app
 function clearCfg(){try{localStorage.removeItem(CFGK)}catch(e){}logout()}
 function clearCfg2(){try{localStorage.removeItem(CFGK)}catch(e){}updateBar()}
 let dirty=false;
+const withTO=(p,ms=1500)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(undefined),ms))]);
 const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open('pf',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-async function draftSet(v){try{const d=await idb();await new Promise((res,rej)=>{const tx=d.transaction('k','readwrite'),s=tx.objectStore('k');v==null?s.delete('draft'):s.put(v,'draft');tx.oncomplete=res;tx.onerror=rej})}catch(e){}}
-async function draftGet(){try{const d=await idb();return await new Promise((res,rej)=>{const q=d.transaction('k').objectStore('k').get('draft');q.onsuccess=()=>res(q.result);q.onerror=rej})}catch(e){return null}}
-async function loadDraft(){const d=await draftGet();if(d){try{S=JSON.parse(d);S.shoots=S.shoots||[];sync();dirty=true}catch(e){}}}
+async function draftSet(v){try{const d=await withTO(idb());if(!d)return;await withTO(new Promise((res,rej)=>{const tx=d.transaction('k','readwrite'),s=tx.objectStore('k');v==null?s.delete('draft'):s.put(v,'draft');tx.oncomplete=res;tx.onerror=rej}))}catch(e){}}
+async function draftGet(){try{const d=await withTO(idb());if(!d)return null;return await withTO(new Promise((res,rej)=>{const q=d.transaction('k').objectStore('k').get('draft');q.onsuccess=()=>res(q.result);q.onerror=rej}))}catch(e){return null}}
+async function loadDraft(){const d=await draftGet();if(d){try{S=JSON.parse(d);S.shoots=S.shoots||[];sync();dirty=true;return true}catch(e){}}return false}
 async function edit(fn){
  if(!owner)return false;
  const prev=S;S=clone(S);fn(S);sync();
@@ -335,17 +336,17 @@ paintText();drawCal();drawPics();drawShoots();mark(curTab);if(restoreY)requestAn
 const ADM_SALT='5e8d5076fd5674c37dab0d01ead8383e',ADM_HASH='58811881ace7586bfb8cafbe04afbdc62954aa286cc133ab0890815a40380f40';
 let fails=0,lockUntil=0,ddArmed=false;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function check(id,pw){try{const enc=new TextEncoder(),km=await crypto.subtle.importKey('raw',enc.encode(id.trim().toLowerCase()+'\n'+pw),'PBKDF2',false,['deriveBits']),bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(ADM_SALT),iterations:200000,hash:'SHA-256'},km,256);return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,'0')).join('')===ADM_HASH}catch(e){return false}}
+async function check(id,pw){if(!(window.crypto&&crypto.subtle))throw 'nocrypto';try{const enc=new TextEncoder(),km=await crypto.subtle.importKey('raw',enc.encode(id.trim().toLowerCase()+'\n'+pw),'PBKDF2',false,['deriveBits']),bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(ADM_SALT),iterations:200000,hash:'SHA-256'},km,256);return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,'0')).join('')===ADM_HASH}catch(e){return false}}
 function updateBar(){$('#abmsg').textContent=dirty?'저장 안 된 변경이 있어요. "사이트 파일 내려받기"로 받은 index.html을 GitHub 저장소에 업로드하면 방문자 사이트에 반영돼요.':(cfg()?'GitHub 자동 저장이 연결돼 있어요. 수정하면 바로 저장돼요.':'변경 사항이 없어요.');$('#dd').textContent=ddArmed?'한 번 더 누르면 변경 취소':'변경 취소'}
 function applyOwner(){document.body.classList.toggle('owner',owner);document.querySelectorAll('.own').forEach(e=>e.hidden=!owner);['title','sub'].forEach(id=>$('#'+id).setAttribute('contenteditable',owner?'true':'false'));$('#adm').textContent=owner?'관리자 로그아웃':'관리자';updateBar();drawCal();drawPics();drawShoots();drawTools();checkMig()}
 function prefill(){const c=cfg()||{},h=location.hostname,m=h.match(/^(.+)\.github\.io$/),seg=location.pathname.split('/')[1];$('#lgo').value=c.o||(m?m[1]:'');$('#lgr').value=c.r||(m?(seg&&seg!=='index.html'?seg:h):'');$('#lgb').value=c.b||'main'}
 const resetModal=()=>{$('#lgp').value='';$('#lgm').textContent=''};
 $('#adm').onclick=()=>{if(owner){if(dirty&&!confirm('저장 안 된 변경이 있어요. 그래도 로그아웃할까요? (변경 내용은 이 기기에 남아 있어요)'))return;logout();toast('로그아웃했어요.')}else{resetModal();$('#lgi').value='';$('#login').hidden=false}};
 $('#lgx').onclick=()=>{$('#login').hidden=true;resetModal()};
-async function finish(){try{sessionStorage.setItem(AUTHK,'1')}catch(e){}owner=true;await loadDraft();$('#login').hidden=true;resetModal();applyOwner();toast('관리자로 로그인했어요.')}
+function finish(){try{sessionStorage.setItem(AUTHK,'1')}catch(e){}owner=true;$('#login').hidden=true;resetModal();applyOwner();toast('관리자로 로그인했어요.');loadDraft().then(ok=>{if(ok)applyOwner()})}
 $('#lgf').onsubmit=async e=>{e.preventDefault();const m=$('#lgm');
  if(Date.now()<lockUntil){m.textContent='시도 횟수를 초과했어요. 잠시 후 다시 시도해 주세요.';return}
- const ok=await check($('#lgi').value,$('#lgp').value);
+ let ok;try{ok=await check($('#lgi').value,$('#lgp').value)}catch(x){m.textContent='이 브라우저에서는 로그인을 지원하지 않아요. Chrome이나 Safari에서 주소를 직접 열어 주세요.';return}
  if(!ok){if(++fails>=5){lockUntil=Date.now()+60000;fails=0}await sleep(900);m.textContent='접근 권한이 없습니다. 관리자만 접근할 수 있어요.';return}
  fails=0;finish()};
 $('#dl').onclick=()=>{const b=new Blob([build()],{type:'text/html'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='index.html';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)};
@@ -360,5 +361,5 @@ $('#ghf').onsubmit=async e=>{e.preventDefault();const m=$('#ghmsg'),c={o:$('#lgo
  catch(x){m.textContent=x===1?'이 키에는 저장소 쓰기 권한이 없어요. Contents: Read and write 권한을 확인해 주세요.':'연결하지 못했어요. 저장소 이름과 키를 확인해 주세요.'}};
 addEventListener('beforeunload',e=>{if(owner&&dirty&&!cfg()){e.preventDefault();e.returnValue=''}});
 let sess=false;try{sess=sessionStorage.getItem(AUTHK)==='1'}catch(e){}
-(async()=>{if(sess){owner=true;await loadDraft()}applyOwner()})();
+if(sess)owner=true;applyOwner();if(sess)loadDraft().then(ok=>{if(ok)applyOwner()});
 </script></body></html>
