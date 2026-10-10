@@ -124,7 +124,7 @@ nav button{transition:background .3s,color .3s}.chip,.btn,.day{transition:backgr
 </section>
 <section id="pic">
  <h2>사진</h2>
- <div class="panel own" id="mig" hidden style="margin-bottom:16px">지금은 사진이 이 파일 안에 들어 있어요. 아래 버튼을 한 번만 누르면 사진을 파일로 옮겨서 용량 한도 없이 쓸 수 있어요. (먼저 맨 아래 "GitHub 자동 저장 연결"이 필요해요) <button class="btn p sm" id="migbtn" type="button">사진을 파일로 옮기기</button> <span class="msg" id="migmsg"></span></div>
+ <div class="panel own" id="mig" hidden style="margin-bottom:16px"><span id="migtxt"></span> <button class="btn p sm" id="migbtn" type="button">사진을 파일로 옮기기</button> <span class="msg" id="migmsg"></span></div>
   <div class="chips" id="chips"></div>
  <div class="own" id="tools" hidden style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="chip" type="button" data-tool="up">사진 추가</button><button class="chip" type="button" data-tool="cat">분류 관리</button><button class="chip" type="button" data-tool="ord">사진 순서 변경</button></div>
  <div class="panel tp" id="pnlCat" hidden style="margin-bottom:16px"><div class="mng">
@@ -400,17 +400,25 @@ $('#pf').onsubmit=async e=>{e.preventDefault();
 /* text */
 ['title','sub'].forEach(id=>$('#'+id).addEventListener('blur',()=>{if(!owner)return;const t=$('#title').innerText.trim(),u=$('#sub').innerText.trim();if(t&&u&&(t!==S.title||u!==S.sub))edit(s=>{s.title=t;s.sub=u})}));
 function paintText(){$('#title').textContent=S.title;$('#sub').textContent=S.sub}
-function checkMig(){$('#mig').hidden=!(owner&&legacyMode)}
+const safeId=id=>String(id).replace(/[^\w.-]/g,'_');
+let migArm=false,migDone=false;
+function checkMig(){const has=!!$('#legacy');$('#mig').hidden=!(owner&&has&&!migDone);if(!has)return;
+ $('#migtxt').textContent=legacyMode?'지금은 사진이 이 파일 안에 들어 있어요. 아래 버튼을 한 번만 누르면 사진을 파일로 옮겨서 용량 한도 없이 쓸 수 있어요. (먼저 맨 아래 "GitHub 자동 저장 연결"이 필요해요)':'이미 사진이 파일 방식으로 바뀌어 있어요. 사진이 안 보일 때만, 이 파일에 들어 있는 사진을 저장소에 다시 올릴 수 있어요. (일정·분류는 바꾸지 않아요)';
+ $('#migbtn').textContent=legacyMode?'사진을 파일로 옮기기':(migArm?'한 번 더 누르면 실행':'사진 파일 다시 올리기')}
+async function slimIndex(c){try{const r=await fetch(`https://api.github.com/repos/${c.o}/${c.r}/contents/index.html?ref=${encodeURIComponent(c.b)}`,{headers:{...ghH(c.t),Accept:'application/vnd.github.raw+json'},cache:'no-store'});
+ if(r.ok){const txt=await r.text();if(txt.includes('id="legacy"'))return b64(txt.replace(/<script type="application\/json" id="legacy">[\s\S]*?<\/script>\n?/,''))}}catch(e){}return null}
 $('#migbtn').onclick=async()=>{const m=$('#migmsg');
  if(!cfg()){m.textContent='먼저 맨 아래 "GitHub 자동 저장 연결"을 해 주세요.';return}
- m.textContent='옮기는 중… (사진 수에 따라 1분쯤 걸려요)';
- try{const c=cfg(),ph=S.photos,files=ph.filter(p=>p._src&&p.f).map(p=>({path:p.f,b64:p._src.split(',')[1]}));
-  if(files.length!==ph.length){m.textContent='사진 데이터를 읽지 못했어요. 페이지를 새로고침한 뒤 다시 시도해 주세요.';return}
-  S.rev=Date.now();files.push({path:'data.json',b64:b64(dataJson())});
-  try{const r=await fetch(`https://api.github.com/repos/${c.o}/${c.r}/contents/index.html?ref=${encodeURIComponent(c.b)}`,{headers:{...ghH(c.t),Accept:'application/vnd.github.raw+json'},cache:'no-store'});
-   if(r.ok){const txt=await r.text();if(txt.includes('id="legacy"'))files.push({path:'index.html',b64:b64(txt.replace(/<script type="application\/json" id="legacy">[\s\S]*?<\/script>\n?/,''))})}}catch(e){}
-  await ghCommit(files,'사진을 파일로 옮기기');
-  legacyMode=false;checkMig();redrawAll();m.textContent='';toast('완료! 1~2분 뒤 사이트가 새 구조로 바뀌어요. 이후에는 사진 용량 걱정 없이 올릴 수 있어요.')}
+ if(!legacyMode&&!migArm){migArm=true;checkMig();return}
+ migArm=false;m.textContent='올리는 중… (사진 수에 따라 1분쯤 걸려요)';
+ try{const c=cfg();let files;
+  if(legacyMode){const ph=S.photos;files=ph.filter(p=>p._src&&p.f).map(p=>({path:p.f,b64:p._src.split(',')[1]}));
+   if(files.length!==ph.length){m.textContent='사진 데이터를 읽지 못했어요. 페이지를 새로고침한 뒤 다시 시도해 주세요.';return}
+   S.rev=Date.now();files.push({path:'data.json',b64:b64(dataJson())})}
+  else{const L=JSON.parse($('#legacy').textContent);files=(L.photos||[]).map(p=>({path:`photos/${safeId(p.id)}.jpg`,b64:p.src.split(',')[1]}))}
+  const si=await slimIndex(c);if(si)files.push({path:'index.html',b64:si});
+  await ghCommit(files,legacyMode?'사진을 파일로 옮기기':'사진 파일 다시 올리기');
+  const was=legacyMode;legacyMode=false;migDone=true;checkMig();redrawAll();m.textContent='';toast(was?'완료! 1~2분 뒤 사이트가 새 구조로 바뀌어요. 이후에는 사진 용량 걱정 없이 올릴 수 있어요.':'사진 파일을 다시 올렸어요. 1~2분 뒤 사이트에서 확인해 주세요.')}
  catch(e){m.textContent=ghErr(e&&e.code,e&&e.msg,'s')}};
 /* start */
 redrawAll();mark(curTab);if(restoreY)requestAnimationFrame(()=>scrollTo({top:restoreY,behavior:'instant'}));
