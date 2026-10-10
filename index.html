@@ -66,7 +66,7 @@ footer{text-align:center;color:var(--dim);font-size:13px;padding:40px 16px calc(
 body{overflow-x:hidden}main{width:100%;min-width:0}main>section{min-width:0}label,input,select,textarea{min-width:0}.row>*,.cal>*,.sa>*,.mng>*{min-width:0}
 .grid{grid-template-columns:repeat(7,minmax(0,1fr))}.day{min-width:0;padding:0}
 .mng{display:grid;grid-template-columns:minmax(0,1.4fr) auto auto auto;gap:8px;align-items:end}
-#photos{min-height:70vh;overflow-anchor:none}button,.chip,.day,.btn,.ph{touch-action:manipulation;-webkit-tap-highlight-color:transparent}body:not(.owner) .own{display:none!important}
+html,body,main,#pic,#photos{overflow-anchor:none}button,.chip,.day,.btn,.ph{touch-action:manipulation;-webkit-tap-highlight-color:transparent}body:not(.owner) .own{display:none!important}
 @media(max-width:820px){.cal{grid-template-columns:minmax(0,1fr);max-width:520px;margin:0 auto}#cal>h2{text-align:center}#cal>h2::before{margin-left:auto;margin-right:auto}.cal-h{justify-content:center;gap:14px}.cal-h b{flex:1;text-align:center}}
 @media(max-width:700px){.mng{grid-template-columns:repeat(3,minmax(0,1fr))}.mng label{grid-column:1/-1}.mng .btn{padding:10px 4px;white-space:nowrap;font-size:14px}}
 body:not(.owner) .tp,body:not(.owner) #tools{display:none!important}@media(max-width:600px){header{padding:10px 12px;gap:8px}.logo{font-size:17px}nav{width:100%;overflow-x:auto}nav button{flex:1;padding:8px 6px;white-space:nowrap}}.msg{color:var(--gold);font-size:13px;min-height:1.4em}
@@ -214,7 +214,7 @@ function drawPics(){
  const c=cats.find(x=>x.name===fcat);
  if(fcat!=='전체'&&!c){fcat='전체';fsub=''}
  const tr=$('#chips');tr.innerHTML='';tr.className='chips tree';
- const go=(cn,sn)=>{fcat=cn;fsub=sn;armed=false;say('');drawPics();requestAnimationFrame(()=>requestAnimationFrame(()=>jump($('#photos'),hh())))};
+ const go=(cn,sn)=>{const top=$('#chips').getBoundingClientRect().top;fcat=cn;fsub=sn;armed=false;say('');drawPics();const d=$('#chips').getBoundingClientRect().top-top;if(d)scrollBy({top:d,behavior:'instant'})};
  tr.appendChild(chip('전체',fcat==='전체',()=>go('전체','')));
  cats.forEach(x=>{const g=document.createElement('div');g.className='grp'+(x.name===fcat?' on':'');
   g.appendChild(chip(`${x.name} (${photos.filter(p=>p.cat===x.name).length})`,x.name===fcat&&!fsub,()=>go(x.name,'')));
