@@ -146,6 +146,7 @@ nav button{transition:background .3s,color .3s}.chip,.btn,.day{transition:backgr
 <label>아이디<input id="lgi" type="text" inputmode="email" lang="en" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
 <label>비밀번호<input id="lgp" type="password" lang="en" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
 <label style="display:flex;flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="lgs" style="width:auto"> 비밀번호 보이기</label>
+<label style="display:flex;flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="lgk" checked style="width:auto"> 이 기기에서 30일간 로그인 유지</label>
 <div class="msg" id="lgm"></div>
 <div style="display:flex;gap:8px"><button class="btn p" type="submit">로그인</button><button class="btn" type="button" id="lgx">닫기</button></div></form></div>
 <div data-shell class="modal" id="ghm" hidden><form id="ghf" class="panel" style="width:min(440px,100%);margin:0" autocomplete="off">
@@ -187,7 +188,7 @@ const dataJson=()=>JSON.stringify(S,(k,v)=>k[0]==='_'?undefined:v,1);
 const norm=j=>{j.events=j.events||[];j.photos=j.photos||[];j.cats=j.cats||[];j.shoots=j.shoots||[];j.title=j.title||'cyj0514';j.sub=j.sub||'cyj0514의 포트폴리오';return j};
 const thumbOf=p=>p._thumb||p.t||p._src||p.f||p.src||'';
 const fullOf=p=>p._src||p.f||p.src||'';
-let loaded=false;
+let loaded=false,legacyMode=false;
 function redrawAll(){paintText();drawCal();drawPics();drawShoots()}
 /* GitHub save */
 const CFGK='gh_cfg';
@@ -211,12 +212,12 @@ async function ghCommit(files,message){
 async function ghLoadData(){const c=cfg();if(!c)return null;const r=await fetch(`https://api.github.com/repos/${c.o}/${c.r}/contents/data.json?ref=${encodeURIComponent(c.b)}`,{headers:{...ghH(c.t),Accept:'application/vnd.github.raw+json'},cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw await gerr(r);return JSON.parse(await r.text())}
 function mergeLocal(fresh){const loc=new Map((S.photos||[]).map(p=>[p.id,p]));(fresh.photos||[]).forEach(p=>{const o=loc.get(p.id);if(o){if(o._src)p._src=o._src;if(o._thumb)p._thumb=o._thumb}});return norm(fresh)}
 async function refreshFromGit(){if(!cfg())return;try{const f=await ghLoadData();if(f){S=mergeLocal(f);sync();redrawAll()}}catch(e){}}
-let legacyMode=false;
-async function loadData(){try{const r=await fetch('data.json?'+Date.now(),{cache:'no-store'});if(r.ok){S=norm(await r.json());sync();loaded=true;legacyMode=false;return true}}catch(e){}
+async function loadData(){try{const r=await fetch('data.json?'+Date.now(),{cache:'no-store'});if(r.ok){const j=norm(await r.json());if(j.photos.length===0&&$('#legacy'))throw 0;S=j;sync();loaded=true;legacyMode=false;return true}}catch(e){}
  const el=$('#legacy');if(el){try{const L=JSON.parse(el.textContent);L.photos=(L.photos||[]).map(p=>({id:p.id,cat:p.cat||'',sub:p.sub||'',ts:p.ts||0,f:`photos/${String(p.id).replace(/[^\w.-]/g,'_')}.jpg`,_src:p.src}));S=norm(L);sync();legacyMode=true}catch(e){}}
  loaded=true;return false}
 const AUTHK='gh_ok';
-function logout(){try{sessionStorage.removeItem(AUTHK)}catch(e){}owner=false;applyOwner()}
+const authOk=()=>{try{const v=localStorage.getItem(AUTHK);if(v&&+v>Date.now())return true;if(v)localStorage.removeItem(AUTHK)}catch(e){}try{return sessionStorage.getItem(AUTHK)==='1'}catch(e){return false}};
+function logout(){try{sessionStorage.removeItem(AUTHK);localStorage.removeItem(AUTHK)}catch(e){}owner=false;applyOwner()}
 function clearCfg(){try{localStorage.removeItem(CFGK)}catch(e){}logout()}
 function clearCfg2(){try{localStorage.removeItem(CFGK)}catch(e){}updateBar()}
 let dirty=false;
@@ -224,7 +225,7 @@ const withTO=(p,ms=1500)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(undefi
 const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open('pf',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 async function draftSet(v){try{const d=await withTO(idb());if(!d)return;await withTO(new Promise((res,rej)=>{const tx=d.transaction('k','readwrite'),s=tx.objectStore('k');v==null?s.delete('draft'):s.put(v,'draft');tx.oncomplete=res;tx.onerror=rej}))}catch(e){}}
 async function draftGet(){try{const d=await withTO(idb());if(!d)return null;return await withTO(new Promise((res,rej)=>{const q=d.transaction('k').objectStore('k').get('draft');q.onsuccess=()=>res(q.result);q.onerror=rej}))}catch(e){return null}}
-async function loadDraft(){const d=await draftGet();if(d){try{S=norm(JSON.parse(d));sync();dirty=true;return true}catch(e){}}return false}
+async function loadDraft(){if(legacyMode)return false;const d=await draftGet();if(!d)return false;try{const o=JSON.parse(d);if(o&&o.data&&o.base!==undefined&&o.base===(S.rev||0)){S=norm(o.data);sync();dirty=true;return true}}catch(e){}await draftSet(null);toast('예전에 저장하지 못한 변경 내용이 있었지만, 지금 사이트 내용과 달라서 불러오지 않았어요.');return false}
 async function edit(fn,extra){
  if(!owner)return false;
  if(legacyMode){toast('먼저 위쪽의 "사진을 파일로 옮기기"를 눌러 주세요.');return false}extra=extra||{};const prev=S;
@@ -232,13 +233,13 @@ async function edit(fn,extra){
   toast('저장하는 중…');
   try{
    let base=S;try{const fresh=await ghLoadData();if(fresh)base=mergeLocal(fresh)}catch(e){if(e&&e.code&&e.code!==404)throw e}
-   S=clone(base);fn(S);sync();
+   S=clone(base);fn(S);S.rev=Date.now();sync();
    const files=[...(extra.files||[]),{path:'data.json',b64:b64(dataJson())}],dels=(extra.del||[]).map(p=>({path:p,del:true}));
    try{await ghCommit([...files,...dels],'사이트 업데이트')}catch(e){if(e&&e.code===422&&dels.length)await ghCommit(files,'사이트 업데이트');else throw e}
    dirty=false;draftSet(null);updateBar();redrawAll();toast('저장했어요. 방문자 사이트에는 1~2분 안에 반영돼요.');return true}
   catch(e){S=prev;sync();redrawAll();const c=e&&e.code;toast(ghErr(c,e&&e.msg,'s'));if(c===401)clearCfg2();return false}}
  if((extra.files||[]).length){toast('사진을 올리려면 먼저 맨 아래 "GitHub 자동 저장 연결"을 해 주세요.');return false}
- S=clone(S);fn(S);sync();dirty=true;draftSet(dataJson());updateBar();redrawAll();
+ S=clone(S);fn(S);sync();dirty=true;draftSet(JSON.stringify({base:S.rev||0,data:JSON.parse(dataJson())}));updateBar();redrawAll();
  toast('변경했어요. 방문자 사이트에 올리려면 "GitHub 자동 저장 연결"을 하거나 data.json을 내려받아 저장소에 올려 주세요.');return true}
 /* shoot schedule */
 function drawShoots(){
@@ -334,7 +335,7 @@ function drawPics(){
  const src=reorder?work:photos,l=src.filter(p=>(fcat==='전체'||p.cat===fcat)&&(!fsub||p.sub===fsub));
  $('#photos').classList.toggle('reordering',reorder);
  $('#photos').innerHTML=l.length?l.map(()=>`<div class="ph" tabindex="0" role="button"><img alt=""><span></span></div>`).join(''):(loaded?'<div class="empty">이 분류에는 아직 사진이 없어요.</div>':'<div class="empty">불러오는 중…</div>');
- $('#photos').querySelectorAll('.ph').forEach((b,i)=>{const p=l[i];const im=b.querySelector('img');im.onload=()=>im.classList.add('ld');im.onerror=()=>im.classList.add('ld');im.loading='lazy';im.src=thumbOf(p);if(im.complete)im.classList.add('ld');if(!reorder){b.classList.add('pop');b.style.setProperty('--d',Math.min(i,14)*45+'ms')}b.querySelector('span').textContent=(p.cat||'미분류')+(p.sub?' / '+p.sub:'');
+ $('#photos').querySelectorAll('.ph').forEach((b,i)=>{const p=l[i];const im=b.querySelector('img');im.onload=()=>im.classList.add('ld');im.onerror=()=>{const c=cfg(),u=im.getAttribute('src')||'';if(c&&!im.dataset.fb&&u&&!/^(data:|http)/.test(u)){im.dataset.fb='1';im.src=`https://raw.githubusercontent.com/${c.o}/${c.r}/${c.b}/${u}`}else im.classList.add('ld')};im.loading='lazy';im.src=thumbOf(p);if(im.complete)im.classList.add('ld');if(!reorder){b.classList.add('pop');b.style.setProperty('--d',Math.min(i,14)*45+'ms')}b.querySelector('span').textContent=(p.cat||'미분류')+(p.sub?' / '+p.sub:'');
   if(!reorder){b.onclick=()=>openLb(p,l);b.onkeydown=e=>{if(e.key==='Enter')openLb(p,l)};return}
   b.style.cursor='grab';b.style.touchAction='none';b.style.userSelect='none';b.dataset.id=p.id;
   b.onpointerdown=e=>{if(e.button>0)return;e.preventDefault();startDrag(e,b,p.id)}})}
@@ -403,8 +404,9 @@ function checkMig(){$('#mig').hidden=!(owner&&legacyMode)}
 $('#migbtn').onclick=async()=>{const m=$('#migmsg');
  if(!cfg()){m.textContent='먼저 맨 아래 "GitHub 자동 저장 연결"을 해 주세요.';return}
  m.textContent='옮기는 중… (사진 수에 따라 1분쯤 걸려요)';
- try{const c=cfg(),files=S.photos.filter(p=>p._src).map(p=>({path:p.f,b64:p._src.split(',')[1]}));
-  files.push({path:'data.json',b64:b64(dataJson())});
+ try{const c=cfg(),ph=S.photos,files=ph.filter(p=>p._src&&p.f).map(p=>({path:p.f,b64:p._src.split(',')[1]}));
+  if(files.length!==ph.length){m.textContent='사진 데이터를 읽지 못했어요. 페이지를 새로고침한 뒤 다시 시도해 주세요.';return}
+  S.rev=Date.now();files.push({path:'data.json',b64:b64(dataJson())});
   try{const r=await fetch(`https://api.github.com/repos/${c.o}/${c.r}/contents/index.html?ref=${encodeURIComponent(c.b)}`,{headers:{...ghH(c.t),Accept:'application/vnd.github.raw+json'},cache:'no-store'});
    if(r.ok){const txt=await r.text();if(txt.includes('id="legacy"'))files.push({path:'index.html',b64:b64(txt.replace(/<script type="application\/json" id="legacy">[\s\S]*?<\/script>\n?/,''))})}}catch(e){}
   await ghCommit(files,'사진을 파일로 옮기기');
@@ -417,7 +419,7 @@ const ADM_SALT='f5c2b3d46d04eb41ca1bf030ef701a75',ADM_HASH='c254f421b1116ead0092
 let fails=0,lockUntil=0,ddArmed=false;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function check(id,pw){if(!(window.crypto&&crypto.subtle))throw 'nocrypto';try{const enc=new TextEncoder(),km=await crypto.subtle.importKey('raw',enc.encode(id.normalize('NFKC').trim().toLowerCase()+'\n'+pw.normalize('NFKC').trim()),'PBKDF2',false,['deriveBits']),bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(ADM_SALT),iterations:200000,hash:'SHA-256'},km,256);return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,'0')).join('')===ADM_HASH}catch(e){return false}}
-function updateBar(){$('#abmsg').textContent=dirty?'저장 안 된 변경이 있어요. "GitHub 자동 저장 연결"을 하거나, 받은 data.json을 GitHub 저장소에 올려야 방문자 사이트에 반영돼요.':(cfg()?'GitHub 자동 저장이 연결돼 있어요. 수정하면 바로 저장돼요.':'변경 사항이 없어요.');$('#dd').textContent=ddArmed?'한 번 더 누르면 변경 취소':'변경 취소'}
+function updateBar(){$('#abmsg').textContent=dirty?'저장 안 된 변경이 있어요. "GitHub 자동 저장 연결"을 하거나, 받은 data.json을 GitHub 저장소에 올려야 방문자 사이트에 반영돼요.':(cfg()?'GitHub 자동 저장이 연결돼 있어요. 수정하면 바로 저장돼요.':'변경 사항이 없어요.');$('#abmsg').textContent+=` (일정 ${S.events.length}개 · 사진 ${S.photos.length}장)`;$('#dd').textContent=ddArmed?'한 번 더 누르면 변경 취소':'변경 취소'}
 function applyOwner(){document.body.classList.toggle('owner',owner);document.querySelectorAll('.own').forEach(e=>e.hidden=!owner);['title','sub'].forEach(id=>$('#'+id).setAttribute('contenteditable',owner?'true':'false'));document.querySelectorAll('#adm,#admtop').forEach(b=>b.textContent=owner?'로그아웃':'관리자');updateBar();drawCal();drawPics();drawShoots();drawTools();checkMig()}
 function prefill(){const c=cfg()||{},h=location.hostname,m=h.match(/^(.+)\.github\.io$/),seg=location.pathname.split('/')[1];$('#lgo').value=c.o||(m?m[1]:'');$('#lgr').value=c.r||(m?(seg&&seg!=='index.html'?seg:h):'');$('#lgb').value=c.b||'main'}
 const resetModal=()=>{$('#lgp').value='';$('#lgp').type='password';$('#lgs').checked=false;$('#lgm').textContent=''};
@@ -425,7 +427,7 @@ $('#lgs').onchange=()=>{$('#lgp').type=$('#lgs').checked?'text':'password'};
 const admClick=()=>{if(owner){if(dirty&&!confirm('저장 안 된 변경이 있어요. 그래도 로그아웃할까요? (변경 내용은 이 기기에 남아 있어요)'))return;logout();toast('로그아웃했어요.')}else{resetModal();$('#lgi').value='';$('#login').hidden=false}};
 document.querySelectorAll('#adm,#admtop').forEach(x=>x.onclick=admClick);
 $('#lgx').onclick=()=>{$('#login').hidden=true;resetModal()};
-function finish(){try{sessionStorage.setItem(AUTHK,'1')}catch(e){}owner=true;$('#login').hidden=true;resetModal();applyOwner();toast('관리자로 로그인했어요.');loadDraft().then(ok=>{if(ok)applyOwner();else refreshFromGit()})}
+function finish(){const keep=$('#lgk')&&$('#lgk').checked;try{if(keep)localStorage.setItem(AUTHK,String(Date.now()+30*864e5));else sessionStorage.setItem(AUTHK,'1')}catch(e){}owner=true;$('#login').hidden=true;resetModal();applyOwner();toast('관리자로 로그인했어요.');loadDraft().then(ok=>{if(ok)applyOwner();else refreshFromGit()})}
 $('#lgf').onsubmit=async e=>{e.preventDefault();const m=$('#lgm');
  if(Date.now()<lockUntil){m.textContent='시도 횟수를 초과했어요. 잠시 후 다시 시도해 주세요.';return}
  let ok;try{ok=await check($('#lgi').value,$('#lgp').value)}catch(x){m.textContent='이 브라우저에서는 로그인을 지원하지 않아요. Chrome이나 Safari에서 주소를 직접 열어 주세요.';return}
@@ -471,7 +473,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;$('#inst').h
 if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!standalone())$('#inst').hidden=false;
 $('#inst').onclick=async()=>{if(dip){dip.prompt();try{await dip.userChoice}catch(e){}dip=null;$('#inst').hidden=true}else toast('Safari 아래쪽 공유 버튼을 누른 뒤 "홈 화면에 추가"를 선택해 주세요.')};
 addEventListener('appinstalled',()=>{$('#inst').hidden=true;toast('앱이 설치됐어요.')});
-let sess=false;try{sess=sessionStorage.getItem(AUTHK)==='1'}catch(e){}
+let sess=authOk();
 if(sess)owner=true;applyOwner();
 loadData().then(()=>{redrawAll();if(restoreY)requestAnimationFrame(()=>scrollTo({top:restoreY,behavior:'instant'}));if(sess)loadDraft().then(ok=>{if(ok)applyOwner();else refreshFromGit()})});
 if(location.hash==='#admin'&&!owner){resetModal();$('#lgi').value='';$('#login').hidden=false}
