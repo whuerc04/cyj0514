@@ -151,6 +151,13 @@
    "end": "2026-12-13",
    "time": "",
    "note": ""
+  },
+  {
+   "id": "1791772830435",
+   "title": "[행사] 서울코믹월드 339",
+   "date": "2026-11-07",
+   "time": "",
+   "note": ""
   }
  ],
  "photos": [
@@ -582,5 +589,6 @@
  "title": "cyj0514",
  "sub": "E-mail : choi040514@gmail.com",
  "shoots": [],
- "ordered": true
+ "ordered": true,
+ "rev": 1791772831200
 }
