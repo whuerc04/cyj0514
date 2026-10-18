@@ -588,7 +588,13 @@
  ],
  "title": "cyj0514",
  "sub": "E-mail : choi040514@gmail.com",
- "shoots": [],
+ "shoots": [
+  {
+   "id": "1792311355720",
+   "name": "수원코믹월드",
+   "items": []
+  }
+ ],
  "ordered": true,
- "rev": 1791772831200
+ "rev": 1792311355720
 }
