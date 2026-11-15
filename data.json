@@ -726,7 +726,14 @@
    "cat": "코스",
    "sub": "행사",
    "ts": 1791556534047,
-   "f": "photos/1791556533987-15.jpg"
+   "f": "photos/1791556533987-15.jpg",
+   "info": {
+    "date": "2026-05-02",
+    "event": "[행사] 수원코믹월드",
+    "model": "@JyaMii7",
+    "genre": "",
+    "character": ""
+   }
   }
  ],
  "cats": [
@@ -751,5 +758,5 @@
  "sub": "E-mail : choi040514@gmail.com",
  "shoots": [],
  "ordered": true,
- "rev": 1794734163031
+ "rev": 1794734211503
 }
