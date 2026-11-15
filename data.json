@@ -171,9 +171,9 @@
    "info": {
     "date": "",
     "event": "[행사] 서울코믹월드 339",
-    "model": "",
-    "genre": "",
-    "character": ""
+    "model": "@heejjang_00",
+    "genre": "버츄얼",
+    "character": "시구레 우이"
    },
    "ts": 1794751876652,
    "f": "photos/mwhwxerpv03-0.webp",
@@ -794,5 +794,5 @@
  "sub": "E-mail : choi040514@gmail.com",
  "shoots": [],
  "ordered": true,
- "rev": 1794751877095
+ "rev": 1794751941634
 }
