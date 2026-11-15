@@ -170,7 +170,14 @@
    "h": 1600,
    "ts": 1794734378198,
    "f": "photos/mwhmicr8wr6-0.webp",
-   "t": "photos/thumb/mwhmicr8wr6-0.webp"
+   "t": "photos/thumb/mwhmicr8wr6-0.webp",
+   "info": {
+    "date": "2026-10-24",
+    "event": "[행사] 수원코믹월드",
+    "model": "",
+    "genre": "",
+    "character": ""
+   }
   },
   {
    "id": "1791556983265-0",
@@ -769,5 +776,5 @@
  "sub": "E-mail : choi040514@gmail.com",
  "shoots": [],
  "ordered": true,
- "rev": 1794734378611
+ "rev": 1794734415034
 }
