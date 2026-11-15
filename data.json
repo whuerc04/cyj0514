@@ -586,7 +586,14 @@
    "cat": "코스",
    "sub": "행사",
    "ts": 1791556533719,
-   "f": "photos/1791556533684-5.jpg"
+   "f": "photos/1791556533684-5.jpg",
+   "info": {
+    "date": "2026-08-29",
+    "event": "[행사] 일러스타페스 13",
+    "model": "@woodwork_carpe",
+    "genre": "원신",
+    "character": "다이루크"
+   }
   },
   {
    "id": "1791556533714-6",
@@ -681,5 +688,5 @@
  "sub": "E-mail : choi040514@gmail.com",
  "shoots": [],
  "ordered": true,
- "rev": 1794733518391
+ "rev": 1794733542260
 }
