@@ -162,24 +162,6 @@
  ],
  "photos": [
   {
-   "id": "mwhwxerpv03-0",
-   "sig": "시구레우이_cyj님8.jpg|9392395|1794751806652",
-   "cat": "코스",
-   "sub": "행사",
-   "w": 1600,
-   "h": 1067,
-   "info": {
-    "date": "",
-    "event": "[행사] 서울코믹월드 339",
-    "model": "@heejjang_00",
-    "genre": "버츄얼",
-    "character": "시구레 우이"
-   },
-   "ts": 1794751876652,
-   "f": "photos/mwhwxerpv03-0.webp",
-   "t": "photos/thumb/mwhwxerpv03-0.webp"
-  },
-  {
    "id": "mwhmicr8wr6-0",
    "sig": "비비아님(완매).jpg|12354046|1792852380380",
    "cat": "코스",
@@ -794,5 +776,5 @@
  "sub": "E-mail : choi040514@gmail.com",
  "shoots": [],
  "ordered": true,
- "rev": 1794751959139
+ "rev": 1794752000165
 }
