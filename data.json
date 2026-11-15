@@ -544,7 +544,14 @@
    "cat": "코스",
    "sub": "행사",
    "ts": 1791556533615,
-   "f": "photos/1791556533575-2.jpg"
+   "f": "photos/1791556533575-2.jpg",
+   "info": {
+    "date": "2026-09-20",
+    "event": "[행사] 부천만화축제",
+    "model": "@woodwork_carpe",
+    "genre": "원신",
+    "character": "다이루크"
+   }
   },
   {
    "id": "1791556533613-3",
@@ -660,5 +667,5 @@
  "sub": "E-mail : choi040514@gmail.com",
  "shoots": [],
  "ordered": true,
- "rev": 1794732092156
+ "rev": 1794732149417
 }
