@@ -792,7 +792,13 @@
  ],
  "title": "cyj0514",
  "sub": "E-mail : choi040514@gmail.com",
- "shoots": [],
+ "shoots": [
+  {
+   "id": "1794752140777os7x",
+   "name": "서울코믹월드 WINTER (일)",
+   "items": []
+  }
+ ],
  "ordered": true,
- "rev": 1794752029739
+ "rev": 1794752141255
 }
