@@ -642,7 +642,14 @@
    "cat": "코스",
    "sub": "행사",
    "ts": 1791556533838,
-   "f": "photos/1791556533799-9.jpg"
+   "f": "photos/1791556533799-9.jpg",
+   "info": {
+    "date": "2026-07-18",
+    "event": "[행사] 서울코믹월드 SUMMER",
+    "model": "@segu_cos",
+    "genre": "명조",
+    "character": "치사"
+   }
   },
   {
    "id": "1791556533829-10",
@@ -709,5 +716,5 @@
  "sub": "E-mail : choi040514@gmail.com",
  "shoots": [],
  "ordered": true,
- "rev": 1794733813907
+ "rev": 1794733847130
 }
