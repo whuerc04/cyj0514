@@ -174,9 +174,9 @@
    "info": {
     "date": "2026-10-24",
     "event": "[행사] 수원코믹월드",
-    "model": "@",
-    "genre": "",
-    "character": ""
+    "model": "@Vibia_00",
+    "genre": "붕괴 스타레일",
+    "character": "완매"
    }
   },
   {
@@ -776,5 +776,5 @@
  "sub": "E-mail : choi040514@gmail.com",
  "shoots": [],
  "ordered": true,
- "rev": 1794734440798
+ "rev": 1794734468579
 }
